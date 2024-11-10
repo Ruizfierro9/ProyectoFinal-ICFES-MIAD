@@ -2,7 +2,7 @@ import mlflow
 import mlflow.sklearn
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.metrics import mean_squared_error
@@ -47,6 +47,13 @@ def crear_modelo_lineal(tupla):
     modelo = linear_regressor.fit(X_train, y_train)
     return modelo
 
+# Función para entrenar el modelo de GradientBoostingRegressor
+def crear_modelo_gradient_boosting(tupla, n_estimators=100, learning_rate=0.1, max_depth=3):
+    X_train, X_test, y_train, y_test = tupla
+    gbr_regressor = GradientBoostingRegressor(n_estimators=n_estimators, learning_rate=learning_rate, max_depth=max_depth, random_state=0)
+    modelo = gbr_regressor.fit(X_train, y_train)
+    return modelo
+
 # Función para hacer predicciones
 def predecir(modelo, tupla):
     X_train, X_test, y_train, y_test = tupla
@@ -70,8 +77,8 @@ mlflow.set_experiment("ICFES_Experiment")  # Nombre del experimento
 # Iniciar un experimento en MLflow
 with mlflow.start_run():
     # Parámetros del modelo RandomForestRegressor
-    num_trees = 150  # Número de árboles en el Random Forest
-    max_depth = 10   # Profundidad máxima de cada árbol
+    num_trees = 200  # Número de árboles en el Random Forest
+    max_depth = 4  # Profundidad máxima de cada árbol
     max_features = 5  # Características a considerar para cada árbol
     
     # Entrenar el modelo de RandomForestRegressor
@@ -114,6 +121,37 @@ with mlflow.start_run():
     
     # Mostrar los resultados del modelo Linear Regression
     print("Linear Regression - MSE es de: " + str(mse_lineal))
+
+# Iniciar otro experimento para el modelo Gradient Boosting Regressor
+with mlflow.start_run():
+    # Parámetros del modelo GradientBoostingRegressor
+    n_estimators = 100  # Número de estimadores
+    learning_rate = 0.1  # Tasa de aprendizaje
+    max_depth = 3  # Profundidad máxima de los árboles
+    
+    # Entrenar el modelo de Gradient Boosting Regressor
+    modelo_gbr = crear_modelo_gradient_boosting(datos2, n_estimators=n_estimators, learning_rate=learning_rate, max_depth=max_depth)
+    
+    # Calcular el MSE para Gradient Boosting
+    mse_gbr = calcular_mse(modelo_gbr, X_test, y_test)
+    
+    # Log de los parámetros y métricas del modelo GradientBoosting
+    mlflow.log_param("model_type", "GradientBoostingRegressor")
+    mlflow.log_param("n_estimators", n_estimators)
+    mlflow.log_param("learning_rate", learning_rate)
+    mlflow.log_param("max_depth", max_depth)
+    mlflow.log_metric("mse", mse_gbr)
+    
+    # Log del modelo GradientBoosting
+    mlflow.sklearn.log_model(modelo_gbr, "model_gradient_boosting")
+    
+    # Mostrar los resultados del modelo Gradient Boosting
+    print("Gradient Boosting - MSE es de: " + str(mse_gbr))
+    print("Parámetros del modelo Gradient Boosting:")
+    print("Número de Estimadores: " + str(n_estimators))
+    print("Tasa de Aprendizaje: " + str(learning_rate))
+    print("Máxima Profundidad: " + str(max_depth))
+
 
     
 
